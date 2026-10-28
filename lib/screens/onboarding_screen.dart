@@ -5,6 +5,7 @@ import '../data/database.dart';
 import '../data/db_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ui.dart';
+import 'import_action.dart';
 import 'loop_form.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -77,6 +78,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               'Most ways of changing a habit fight the urge. This one gets curious about it instead — and lets your brain do the rest.'),
           const Spacer(),
           PrimaryButton('Show me how', onPressed: () => _go(_Phase.idea)),
+          GhostButton('Restore from a backup',
+              onPressed: () => importBackupFlow(context, DatabaseProvider.of(context))),
         ],
       ),
     );

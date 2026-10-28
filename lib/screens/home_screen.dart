@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/trend_chart.dart';
 import '../widgets/ui.dart';
 import 'add_loop_screen.dart';
+import 'import_action.dart';
 import 'moment_capture_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -24,19 +25,34 @@ class HomeScreen extends StatelessWidget {
           Row(
             children: [
               const Expanded(child: Eyebrow('today · just noticing')),
-              IconButton(
-                tooltip: 'Export backup',
-                icon: Icon(Icons.ios_share, color: context.c.muted, size: 22),
-                onPressed: () async {
+              PopupMenuButton<String>(
+                tooltip: 'Backup',
+                icon: Icon(Icons.more_horiz, color: context.c.muted, size: 24),
+                color: context.c.surface,
+                onSelected: (v) async {
                   final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    await exportBackup(db);
-                  } catch (_) {
-                    messenger.showSnackBar(
-                      const SnackBar(content: Text("Couldn't export right now.")),
-                    );
+                  if (v == 'export') {
+                    try {
+                      await exportBackup(db);
+                    } catch (_) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Couldn't export right now.")),
+                      );
+                    }
+                  } else if (v == 'import') {
+                    await importBackupFlow(context, db);
                   }
                 },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'export',
+                    child: Text('Export backup', style: TextStyle(color: context.c.text)),
+                  ),
+                  PopupMenuItem(
+                    value: 'import',
+                    child: Text('Import backup', style: TextStyle(color: context.c.text)),
+                  ),
+                ],
               ),
             ],
           ),

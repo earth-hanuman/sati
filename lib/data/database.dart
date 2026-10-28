@@ -69,6 +69,19 @@ class AppDatabase extends _$AppDatabase {
   Future<List<Loop>> allLoops() => select(loops).get();
   Future<List<Moment>> allMoments() => select(moments).get();
 
+  /// Import a backup. Upserts by primary key, so re-importing the same file is
+  /// idempotent and importing onto a fresh install restores everything.
+  Future<void> importAll(
+    List<LoopsCompanion> loopRows,
+    List<MomentsCompanion> momentRows,
+  ) =>
+      transaction(() async {
+        await batch((b) {
+          b.insertAllOnConflictUpdate(loops, loopRows);
+          b.insertAllOnConflictUpdate(moments, momentRows);
+        });
+      });
+
   /// All active (non-archived) loops, oldest first.
   Stream<List<Loop>> watchActiveLoops() {
     final q = select(loops)

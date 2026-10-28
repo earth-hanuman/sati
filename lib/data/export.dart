@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:drift/drift.dart' show Value;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'database.dart';
@@ -56,4 +57,58 @@ Future<void> exportBackup(AppDatabase db) async {
     subject: 'Sati backup',
     text: 'Your Sati habit data (${loops.length} habits, ${moments.length} moments).',
   );
+}
+
+class ImportResult {
+  final int loops;
+  final int moments;
+  const ImportResult(this.loops, this.moments);
+}
+
+DateTime _parseDate(Object? v) => DateTime.parse(v as String).toUtc();
+
+/// Parses a backup JSON string and upserts it into the database.
+/// Throws [FormatException] if the file isn't a recognizable Sati backup.
+Future<ImportResult> importBackupString(AppDatabase db, String jsonStr) async {
+  final Object? decoded = jsonDecode(jsonStr);
+  if (decoded is! Map<String, dynamic>) {
+    throw const FormatException('Not a Sati backup file.');
+  }
+  if (decoded['schemaVersion'] != 1) {
+    throw const FormatException('Unsupported backup version.');
+  }
+  final loopsJson = (decoded['loops'] as List?) ?? const [];
+  final momentsJson = (decoded['moments'] as List?) ?? const [];
+
+  final loopRows = <LoopsCompanion>[
+    for (final l in loopsJson.cast<Map<String, dynamic>>())
+      LoopsCompanion(
+        id: Value(l['id'] as String),
+        behavior: Value(l['behavior'] as String),
+        trigger: Value((l['trigger'] as String?) ?? ''),
+        rewardGuess: Value((l['rewardGuess'] as String?) ?? ''),
+        isFocus: Value((l['isFocus'] as bool?) ?? false),
+        createdAt: Value(_parseDate(l['createdAt'])),
+        archivedAt: Value(l['archivedAt'] == null ? null : _parseDate(l['archivedAt'])),
+        colorKey: Value((l['colorKey'] as String?) ?? 'warm'),
+      ),
+  ];
+  final momentRows = <MomentsCompanion>[
+    for (final m in momentsJson.cast<Map<String, dynamic>>())
+      MomentsCompanion(
+        id: Value(m['id'] as String),
+        loopId: Value(m['loopId'] as String),
+        type: Value(m['type'] as String),
+        urgeStrength: Value(m['urgeStrength'] as int),
+        urgeAfter: Value(m['urgeAfter'] as int?),
+        rewardCategory: Value(m['rewardCategory'] as String?),
+        followupAnswerIndex: Value(m['followupAnswerIndex'] as int?),
+        rewardValue: Value(m['rewardValue'] as int?),
+        note: Value(m['note'] as String?),
+        createdAt: Value(_parseDate(m['createdAt'])),
+      ),
+  ];
+
+  await db.importAll(loopRows, momentRows);
+  return ImportResult(loopRows.length, momentRows.length);
 }
