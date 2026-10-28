@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0f1115" />
+<title>Onboarding — prototype</title>
+<style>
+  :root{
+    --bg:#0f1115; --surface:#171a21; --surface-2:#1f232c; --line:#2a2f3a;
+    --text:#eef1f6; --muted:#9aa3b2; --faint:#6b7382;
+    --accent:#7bc6a4; --accent-soft:#213128; --accent-ink:#0f1115;
+    --warm:#e0a96d; --radius:20px; --tap:#ffffff14;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#e2e6ec;
+      --text:#141821; --muted:#5c6473; --faint:#8a92a1;
+      --accent:#2f9e72; --accent-soft:#dff0e7; --accent-ink:#ffffff; --tap:#00000010;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+  #app{width:100%;max-width:430px;min-height:100dvh;position:relative;background:var(--bg);overflow:hidden;
+    padding:env(safe-area-inset-top) 0 0}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;
+    padding:28px 22px calc(26px + env(safe-area-inset-bottom));
+    opacity:0;transform:translateY(14px);pointer-events:none;
+    transition:opacity .34s ease,transform .34s ease;overflow-y:auto}
+  .screen.active{opacity:1;transform:none;pointer-events:auto}
+  .spacer{flex:1 1 auto}
+  .topbar{display:flex;align-items:center;gap:14px;min-height:30px;margin-bottom:6px}
+  .back{background:var(--tap);border:none;color:var(--text);width:38px;height:38px;border-radius:50%;
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+  .progress{flex:1;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+  .progress>i{display:block;height:100%;background:var(--accent);width:0;transition:width .35s ease}
+  .eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  h1{font-size:30px;line-height:1.18;margin:14px 0 0;font-weight:650;letter-spacing:-.02em}
+  h2{font-size:23px;line-height:1.28;margin:12px 0 0;font-weight:600;letter-spacing:-.01em}
+  p.sub{color:var(--muted);font-size:16px;line-height:1.55;margin:14px 0 0}
+  .btn{width:100%;border-radius:16px;cursor:pointer;font-size:17px;font-weight:600;padding:18px;
+    border:1px solid var(--line);background:var(--surface);color:var(--text);
+    transition:transform .12s ease;text-align:center}
+  .btn:active{transform:scale(.985)}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted);font-weight:600;font-size:15px;padding:14px}
+  .btn[disabled]{opacity:.4;pointer-events:none}
+  .btnrow{margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:18px}
+  .grid{margin-top:20px;display:grid;gap:12px}
+  .chip{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:16px;
+    padding:17px 16px;font-size:16px;font-weight:600;cursor:pointer;text-align:left;
+    transition:transform .12s ease,border-color .15s,background .15s}
+  .chip small{display:block;color:var(--faint);font-weight:500;font-size:13px;margin-top:3px}
+  .chip:active{transform:scale(.98)}
+  .chip.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .loopbuild{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:4px 0}
+  .lbrow{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .lbrow:last-child{border-bottom:none}
+  .lbrow .tag{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);width:72px;flex:none;font-weight:700}
+  .lbrow .fill{font-weight:600;font-size:16px}
+  .lbrow .fill.empty{color:var(--faint);font-weight:500}
+  .lbrow .arrow{color:var(--warm);font-size:18px}
+  .loopmini{display:flex;align-items:center;gap:10px;margin-top:22px;flex-wrap:wrap}
+  .pill{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:10px 14px;font-weight:600;font-size:14px}
+  .seq{color:var(--warm);font-size:18px}
+  .field{margin-top:18px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    color:var(--text);font-size:16px;padding:16px;font-family:inherit}
+  .field:focus{outline:none;border-color:var(--accent)}
+  .orb{width:120px;height:120px;border-radius:50%;margin:30px auto 0;
+    background:radial-gradient(circle at 50% 42%,var(--accent),var(--accent-soft));
+    box-shadow:0 0 50px -12px var(--accent);animation:pulse 3.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(.82)}50%{transform:scale(1)}}
+  .center{align-items:center;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 0 welcome -->
+  <section class="screen active center" data-screen="w0">
+    <div class="spacer"></div>
+    <div class="orb"></div>
+    <h1 style="margin-top:30px">This isn't about willpower.</h1>
+    <p class="sub">Most ways of changing a habit fight the urge. This one gets curious about it instead — and lets your brain do the rest.</p>
+    <div class="btnrow" style="width:100%"><button class="btn primary" onclick="go('w1')">Show me how</button></div>
+  </section>
+
+  <!-- 1 the one idea -->
+  <section class="screen" data-screen="w1">
+    <div class="topbar"><button class="back" onclick="go('w0')">‹</button><div class="progress"><i style="width:16%"></i></div></div>
+    <div class="eyebrow">the one idea</div>
+    <h2>Every habit is a loop.</h2>
+    <p class="sub">Something sets it off. You do the thing. You get some kind of payoff. Your brain learns the loop and runs it on autopilot.</p>
+    <div class="loopmini">
+      <span class="pill">⚡ Trigger</span><span class="seq">→</span>
+      <span class="pill">🔁 Behavior</span><span class="seq">→</span>
+      <span class="pill">🎁 Reward</span>
+    </div>
+    <p class="sub">You can't delete the loop. But when you really <i>see</i> the reward for what it is, it loses its pull. That's the whole app.</p>
+    <div class="btnrow"><button class="btn primary" onclick="go('w2')">Let's map one of mine</button></div>
+  </section>
+
+  <!-- 2 pick behavior -->
+  <section class="screen" data-screen="w2">
+    <div class="topbar"><button class="back" onclick="go('w1')">‹</button><div class="progress"><i style="width:34%"></i></div></div>
+    <div class="eyebrow">behavior · 1 of 3</div>
+    <h2>What's one habit you'd like to look at?</h2>
+    <p class="sub">Pick the behavior itself — the thing you do. Start with just one.</p>
+    <div class="grid">
+      <button class="chip" onclick="pick('behavior',this,'Evening phone scrolling')">📱 Phone / doomscrolling</button>
+      <button class="chip" onclick="pick('behavior',this,'Snacking when stressed')">🍫 Stress snacking</button>
+      <button class="chip" onclick="pick('behavior',this,'Vaping / smoking')">💨 Vaping / smoking</button>
+      <button class="chip" onclick="pick('behavior',this,'Putting things off')">⏳ Procrastinating</button>
+      <button class="chip" onclick="pickCustom('behavior',this)">✏️ Something else…</button>
+    </div>
+    <input class="field" id="f_behavior" style="display:none" placeholder="name the habit, in your words" oninput="customInput('behavior',this.value)" />
+    <div class="btnrow"><button class="btn primary" id="n2" disabled onclick="go('w3')">Next</button></div>
+  </section>
+
+  <!-- 3 trigger -->
+  <section class="screen" data-screen="w3">
+    <div class="topbar"><button class="back" onclick="go('w2')">‹</button><div class="progress"><i style="width:52%"></i></div></div>
+    <div class="eyebrow">trigger · 2 of 3</div>
+    <h2>When does it usually show up?</h2>
+    <p class="sub">A feeling, a time, a place, a moment. Your best guess is fine — you'll refine it by noticing.</p>
+    <div class="grid">
+      <button class="chip" onclick="pick('trigger',this,'When I feel stressed or anxious')">😣 Stressed or anxious</button>
+      <button class="chip" onclick="pick('trigger',this,'When I'm bored or restless')">🥱 Bored or restless</button>
+      <button class="chip" onclick="pick('trigger',this,'Winding down at night')">🌙 Winding down at night</button>
+      <button class="chip" onclick="pick('trigger',this,'When I feel lonely')">🫥 Lonely or low</button>
+      <button class="chip" onclick="pickCustom('trigger',this)">✏️ Something else…</button>
+    </div>
+    <input class="field" id="f_trigger" style="display:none" placeholder="what sets it off?" oninput="customInput('trigger',this.value)" />
+    <div class="btnrow"><button class="btn primary" id="n3" disabled onclick="go('w4')">Next</button></div>
+  </section>
+
+  <!-- 4 reward guess -->
+  <section class="screen" data-screen="w4">
+    <div class="topbar"><button class="back" onclick="go('w3')">‹</button><div class="progress"><i style="width:70%"></i></div></div>
+    <div class="eyebrow">reward · 3 of 3</div>
+    <h2>What do you <i>think</i> you get from it?</h2>
+    <p class="sub">Just a guess for now. Finding the real reward is what the moments are for.</p>
+    <div class="grid">
+      <button class="chip" onclick="pick('reward',this,'A break / escape')">😮‍💨 A break or escape</button>
+      <button class="chip" onclick="pick('reward',this,'Comfort')">🫂 Comfort</button>
+      <button class="chip" onclick="pick('reward',this,'A little hit of pleasure')">😋 A hit of pleasure</button>
+      <button class="chip" onclick="pick('reward',this,'Something to fill the time')">⌛ Filling the time</button>
+      <button class="chip" onclick="pickCustom('reward',this)">✏️ Something else…</button>
+    </div>
+    <input class="field" id="f_reward" style="display:none" placeholder="what's the payoff?" oninput="customInput('reward',this.value)" />
+    <div class="btnrow"><button class="btn primary" id="n4" disabled onclick="go('w5')">Next</button></div>
+  </section>
+
+  <!-- 5 review the loop -->
+  <section class="screen" data-screen="w5">
+    <div class="topbar"><button class="back" onclick="go('w4')">‹</button><div class="progress"><i style="width:86%"></i></div></div>
+    <h2>Here's your loop.</h2>
+    <p class="sub">This is the thing we'll watch together. You can always change it later.</p>
+    <div class="loopbuild">
+      <div class="lbrow"><span class="tag">Trigger</span><span class="fill" id="r_trigger">—</span></div>
+      <div class="lbrow"><span class="tag">Behavior</span><span class="fill" id="r_behavior">—</span></div>
+      <div class="lbrow"><span class="tag">Reward</span><span class="fill" id="r_reward">—</span></div>
+    </div>
+    <div class="btnrow"><button class="btn primary" onclick="go('w6')">This is my focus loop</button></div>
+  </section>
+
+  <!-- 6 intention -->
+  <section class="screen center" data-screen="w6">
+    <div class="topbar" style="width:100%"><div class="progress"><i style="width:100%"></i></div></div>
+    <div class="spacer"></div>
+    <div class="eyebrow">your first job</div>
+    <h1 style="margin-top:14px">Just notice. Change nothing.</h1>
+    <p class="sub">For now, don't try to stop. When the urge shows up, just open the app and look at it with curiosity. That's it. The change comes from seeing clearly — not from forcing.</p>
+    <div class="spacer"></div>
+    <div class="btnrow" style="width:100%">
+      <button class="btn primary" onclick="finish()">I'm ready</button>
+    </div>
+  </section>
+
+  <!-- fake handoff -->
+  <section class="screen center" data-screen="done">
+    <div class="spacer"></div>
+    <div class="orb" style="animation:pulse 2.4s ease-in-out infinite"></div>
+    <h2 style="margin-top:24px">You're set.</h2>
+    <p class="sub" id="doneLoop">—</p>
+    <p class="sub" style="color:var(--faint);font-size:14px">(In the real app this hands off to Home → the Moment capture you already saw.)</p>
+    <div class="spacer"></div>
+    <div class="btnrow" style="width:100%"><button class="btn ghost" onclick="restart()">↺ Run onboarding again</button></div>
+  </section>
+
+</div>
+<script>
+const scr={};document.querySelectorAll('.screen').forEach(s=>scr[s.dataset.screen]=s);
+let current='w0';
+function go(n){if(!scr[n])return;scr[current].classList.remove('active');scr[n].classList.add('active');scr[n].scrollTop=0;current=n;
+  if(n==='w5')review();}
+const data={behavior:'',trigger:'',reward:''};
+const nextBtn={behavior:'n2',trigger:'n3',reward:'n4'};
+function pick(key,el,val){
+  el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');data[key]=val;
+  const f=document.getElementById('f_'+key); if(f) f.style.display='none';
+  document.getElementById(nextBtn[key]).disabled=false;
+}
+function pickCustom(key,el){
+  el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  const f=document.getElementById('f_'+key); f.style.display='block'; f.focus();
+  data[key]=f.value.trim();
+  document.getElementById(nextBtn[key]).disabled = !data[key];
+}
+function customInput(key,v){data[key]=v.trim();document.getElementById(nextBtn[key]).disabled=!data[key];}
+function review(){
+  document.getElementById('r_behavior').textContent=data.behavior||'—';
+  document.getElementById('r_trigger').textContent=data.trigger||'—';
+  document.getElementById('r_reward').textContent=data.reward||'—';
+}
+function finish(){document.getElementById('doneLoop').textContent='Focus loop: '+(data.behavior||'your habit')+'.';go('done');}
+function restart(){data.behavior=data.trigger=data.reward='';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.field').forEach(f=>{f.value='';f.style.display='none'});
+  ['n2','n3','n4'].forEach(id=>document.getElementById(id).disabled=true);
+  go('w0');}
+</script>
+</body>
+</html>

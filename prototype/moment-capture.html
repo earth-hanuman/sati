@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0f1115" />
+<title>Moment — prototype</title>
+<style>
+  :root{
+    --bg:#0f1115; --surface:#171a21; --surface-2:#1f232c; --line:#2a2f3a;
+    --text:#eef1f6; --muted:#9aa3b2; --faint:#6b7382;
+    --accent:#7bc6a4; --accent-soft:#213128; --accent-ink:#0f1115;
+    --warm:#e0a96d; --radius:20px; --tap:#ffffff14;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6; --line:#e2e6ec;
+      --text:#141821; --muted:#5c6473; --faint:#8a92a1;
+      --accent:#2f9e72; --accent-soft:#dff0e7; --accent-ink:#ffffff; --tap:#00000010;
+    }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex; justify-content:center; align-items:stretch;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{
+    width:100%; max-width:430px; min-height:100dvh; position:relative;
+    display:flex; flex-direction:column; padding:env(safe-area-inset-top) 0 0;
+    background:var(--bg); overflow:hidden;
+  }
+  .screen{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    padding:28px 22px calc(26px + env(safe-area-inset-bottom));
+    opacity:0; transform:translateY(14px); pointer-events:none;
+    transition:opacity .34s ease, transform .34s ease;
+    overflow-y:auto;
+  }
+  .screen.active{opacity:1; transform:none; pointer-events:auto}
+  .spacer{flex:1 1 auto}
+
+  .eyebrow{font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); font-weight:600}
+  h1{font-size:30px; line-height:1.18; margin:12px 0 0; font-weight:650; letter-spacing:-.02em}
+  h2{font-size:22px; line-height:1.3; margin:10px 0 0; font-weight:600; letter-spacing:-.01em}
+  p.sub{color:var(--muted); font-size:16px; line-height:1.5; margin:12px 0 0}
+  .tiny{color:var(--faint); font-size:13px; line-height:1.5}
+
+  /* Home */
+  .loopchip{
+    margin-top:22px; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px 18px; display:flex; align-items:center; gap:14px;
+  }
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--warm);flex:none}
+  .loopchip .name{font-weight:600;font-size:16px}
+  .loopchip .meta{color:var(--faint);font-size:13px;margin-top:2px}
+
+  .bigbtn{
+    width:100%; border:none; border-radius:var(--radius); cursor:pointer;
+    background:var(--accent); color:var(--accent-ink);
+    font-size:18px; font-weight:650; padding:22px 20px; text-align:center;
+    transition:transform .12s ease, filter .12s ease;
+    box-shadow:0 10px 30px -12px var(--accent);
+  }
+  .bigbtn:active{transform:scale(.98); filter:brightness(.97)}
+  .bigbtn .k{display:block;font-size:13px;font-weight:600;opacity:.75;margin-top:4px;letter-spacing:.01em}
+
+  .btn{
+    width:100%; border-radius:16px; cursor:pointer; font-size:17px; font-weight:600;
+    padding:18px 18px; border:1px solid var(--line); background:var(--surface); color:var(--text);
+    transition:transform .12s ease, background .15s ease, border-color .15s ease; text-align:left;
+  }
+  .btn:active{transform:scale(.985)}
+  .btn.choose{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+  .btn.choose .lead{display:flex;flex-direction:column;gap:3px}
+  .btn.choose .lead small{color:var(--faint);font-size:13px;font-weight:500}
+  .btn.choose .arrow{color:var(--faint);font-size:20px}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;text-align:center}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted);font-weight:600;font-size:15px;padding:14px}
+
+  .topbar{display:flex;align-items:center;gap:14px;min-height:30px}
+  .back{background:var(--tap);border:none;color:var(--text);width:38px;height:38px;border-radius:50%;
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+  .progress{flex:1;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+  .progress > i{display:block;height:100%;background:var(--accent);width:0;transition:width .35s ease}
+
+  /* strength slider */
+  .readout{text-align:center;margin-top:30px}
+  .readout .val{font-size:72px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .readout .lab{color:var(--muted);margin-top:6px;font-size:15px;transition:color .2s}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:46px;background:transparent;margin-top:26px;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:6px;
+    background:linear-gradient(90deg,var(--accent),var(--warm))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--accent);
+    margin-top:-12px;box-shadow:0 3px 10px #0005}
+  input[type=range]::-moz-range-track{height:10px;border-radius:6px;background:var(--line)}
+  input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+
+  /* breathing */
+  .breath-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+  .orb{
+    width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle at 50% 42%, var(--accent), var(--accent-soft));
+    display:flex;align-items:center;justify-content:center;
+    transform:scale(.72);transition:transform 4s ease-in-out;
+    box-shadow:0 0 60px -10px var(--accent);
+  }
+  .orb.expand{transform:scale(1.05)}
+  .orb .word{color:var(--accent-ink);font-weight:650;font-size:20px;letter-spacing:.02em}
+  @media (prefers-color-scheme: light){ .orb .word{color:#0c3a28} }
+  .breath-cap{margin-top:40px;text-align:center;color:var(--muted);font-size:17px;min-height:26px;transition:opacity .4s}
+
+  /* chips grid */
+  .grid{margin-top:20px;display:grid;gap:12px}
+  .chip{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:16px;
+    padding:18px 16px;font-size:16px;font-weight:600;cursor:pointer;text-align:left;
+    transition:transform .12s ease,border-color .15s ease,background .15s ease}
+  .chip small{display:block;color:var(--faint);font-weight:500;font-size:13px;margin-top:3px}
+  .chip:active{transform:scale(.98)}
+  .chip.sel{border-color:var(--accent);background:var(--accent-soft)}
+
+  /* trend card */
+  .card{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .card .h{display:flex;justify-content:space-between;align-items:baseline}
+  .card .h .t{font-weight:600;font-size:15px}
+  .card .h .d{color:var(--faint);font-size:13px}
+  .delta{margin-top:14px;color:var(--accent);font-size:14px;font-weight:600}
+  svg{display:block;width:100%;height:120px;margin-top:8px;overflow:visible}
+
+  .center{align-items:center;text-align:center}
+  .checkmark{width:76px;height:76px;border-radius:50%;background:var(--accent-soft);
+    display:flex;align-items:center;justify-content:center;margin:8px auto 0;border:1.5px solid var(--accent)}
+  .checkmark svg{width:36px;height:36px;margin:0}
+  .fade-slow{animation:fade .6s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .btnrow{margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:18px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section class="screen active" data-screen="home">
+    <div class="eyebrow">Today · just noticing</div>
+    <h1>One step at a time.</h1>
+    <div class="loopchip">
+      <span class="dot"></span>
+      <div>
+        <div class="name">Evening phone scrolling</div>
+        <div class="meta">your focus loop · 6 moments logged</div>
+      </div>
+    </div>
+    <p class="sub">When the pull shows up, don't fight it. Just open this and look at it with me.</p>
+    <div class="spacer"></div>
+    <button class="bigbtn" onclick="start()">
+      Something's happening right now
+      <span class="k">tap the moment you feel the urge</span>
+    </button>
+    <button class="btn ghost" onclick="go('trend-peek')" style="margin-top:12px">See what I'm learning →</button>
+  </section>
+
+  <!-- STEP 1: which urge (pre-selected focus loop) -->
+  <section class="screen" data-screen="pick">
+    <div class="topbar"><button class="back" onclick="go('home')">‹</button><div class="progress"><i style="width:20%"></i></div></div>
+    <h2>What's pulling at you?</h2>
+    <p class="sub">Name it. That's the whole first move.</p>
+    <div class="grid">
+      <button class="chip sel" onclick="pickLoop(this,'Evening phone scrolling')">📱 Evening phone scrolling<small>your focus loop</small></button>
+      <button class="chip" onclick="pickLoop(this,'Snacking when stressed')">🍫 Snacking when stressed</button>
+      <button class="chip" onclick="pickLoop(this,'Something else')">✏️ Something else</button>
+    </div>
+    <div class="btnrow"><button class="btn primary" onclick="go('strength')">Next</button></div>
+  </section>
+
+  <!-- STEP 2: strength -->
+  <section class="screen" data-screen="strength">
+    <div class="topbar"><button class="back" onclick="go('pick')">‹</button><div class="progress"><i style="width:40%"></i></div></div>
+    <h2>How strong is the urge?</h2>
+    <p class="sub">No right answer. Just check in.</p>
+    <div class="readout">
+      <div class="val" id="sVal">5</div>
+      <div class="lab" id="sLab">a noticeable pull</div>
+    </div>
+    <input type="range" min="0" max="10" value="5" id="sRange" oninput="onStrength(this.value)" />
+    <div style="display:flex;justify-content:space-between;color:var(--faint);font-size:12px;margin-top:2px"><span>barely there</span><span>overwhelming</span></div>
+    <div class="btnrow"><button class="btn primary" onclick="go('fork')">Next</button></div>
+  </section>
+
+  <!-- STEP 3: fork -->
+  <section class="screen" data-screen="fork">
+    <div class="topbar"><button class="back" onclick="go('strength')">‹</button><div class="progress"><i style="width:60%"></i></div></div>
+    <h2>What's happening?</h2>
+    <p class="sub">Both are fine. There's no failing here.</p>
+    <button class="btn choose" onclick="go('breath')">
+      <span class="lead">Riding it out<small>stay with the urge for a moment</small></span><span class="arrow">›</span>
+    </button>
+    <button class="btn choose" onclick="go('reward')">
+      <span class="lead">I did the behavior<small>let's look at it together</small></span><span class="arrow">›</span>
+    </button>
+  </section>
+
+  <!-- PATH A: breathing / urge-surf -->
+  <section class="screen" data-screen="breath">
+    <div class="topbar"><button class="back" onclick="go('fork')">‹</button><div class="progress"><i style="width:85%"></i></div></div>
+    <div class="breath-wrap">
+      <div class="orb" id="orb"><span class="word" id="orbWord">breathe</span></div>
+      <div class="breath-cap" id="breathCap">Let the urge be here. You don't have to do anything about it.</div>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary" onclick="go('aftersurf')">The wave passed</button>
+      <button class="btn ghost" onclick="go('aftersurf')">Skip</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="aftersurf">
+    <div class="topbar"><div class="progress"><i style="width:100%"></i></div></div>
+    <h2>Where's the urge now?</h2>
+    <p class="sub">Notice it rose… and it's already changing. Urges are waves, not walls.</p>
+    <div class="readout">
+      <div class="val" id="aVal">2</div>
+      <div class="lab" id="aLab">fading</div>
+    </div>
+    <input type="range" min="0" max="10" value="2" id="aRange" oninput="onAfter(this.value)" />
+    <div class="btnrow"><button class="btn primary" onclick="finishSurf()">Done</button></div>
+  </section>
+
+  <!-- PATH B: explore the reward -->
+  <section class="screen" data-screen="reward">
+    <div class="topbar"><button class="back" onclick="go('fork')">‹</button><div class="progress"><i style="width:75%"></i></div></div>
+    <h2>What were you hoping to get?</h2>
+    <p class="sub">The real reward is usually hiding under the obvious one.</p>
+    <div class="grid" id="rewardGrid">
+      <button class="chip" onclick="pickReward('relief')">😮‍💨 Relief / escape<small>to get away from a feeling</small></button>
+      <button class="chip" onclick="pickReward('pleasure')">😋 Pleasure / stimulation<small>it feels good in the moment</small></button>
+      <button class="chip" onclick="pickReward('comfort')">🫂 Comfort<small>to soothe myself</small></button>
+      <button class="chip" onclick="pickReward('boredom')">🥱 Fill the boredom<small>something to do</small></button>
+      <button class="chip" onclick="pickReward('unsure')">🤔 Honestly not sure<small>that's okay</small></button>
+    </div>
+  </section>
+
+  <!-- branching follow-up -->
+  <section class="screen" data-screen="followup">
+    <div class="topbar"><button class="back" onclick="go('reward')">‹</button><div class="progress"><i style="width:88%"></i></div></div>
+    <h2 id="fuQ">…</h2>
+    <p class="sub">Be honest with yourself. Curiosity, not judgment.</p>
+    <div class="grid" id="fuGrid"></div>
+  </section>
+
+  <!-- compare: as good as imagined? feeds the trend -->
+  <section class="screen" data-screen="compare">
+    <div class="topbar"><div class="progress"><i style="width:96%"></i></div></div>
+    <h2>So — how rewarding was it, really?</h2>
+    <p class="sub">Not how good you <i>expected</i>. How it actually left you feeling.</p>
+    <div class="readout">
+      <div class="val" id="cVal">5</div>
+      <div class="lab" id="cLab">meh</div>
+    </div>
+    <input type="range" min="0" max="10" value="5" id="cRange" oninput="onCompare(this.value)" />
+    <div style="display:flex;justify-content:space-between;color:var(--faint);font-size:12px;margin-top:2px"><span>not worth it</span><span>genuinely great</span></div>
+    <div class="btnrow"><button class="btn primary" onclick="finishReward()">Log this moment</button></div>
+  </section>
+
+  <!-- DONE -->
+  <section class="screen center" data-screen="done">
+    <div class="spacer"></div>
+    <div class="checkmark fade-slow"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-12"/></svg></div>
+    <h2 class="fade-slow" id="doneTitle" style="margin-top:18px">That's one more data point.</h2>
+    <p class="sub fade-slow" id="doneSub">You didn't have to change anything. Just by looking, your brain starts updating what this habit is really worth.</p>
+
+    <div class="card fade-slow" style="width:100%">
+      <div class="h"><span class="t">Evening phone scrolling</span><span class="d">how rewarding, over time</span></div>
+      <svg id="trendSvg" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
+      <div class="delta" id="trendDelta"></div>
+    </div>
+
+    <div class="btnrow" style="width:100%">
+      <button class="btn primary" onclick="resetAll();go('home')">Back home</button>
+      <button class="btn ghost" onclick="resetAll();start()">Log another</button>
+    </div>
+  </section>
+
+  <!-- quick trend peek from home -->
+  <section class="screen center" data-screen="trend-peek">
+    <div class="topbar" style="width:100%"><button class="back" onclick="go('home')">‹</button><div class="progress"><i style="width:100%"></i></div></div>
+    <h2 style="margin-top:8px">What I'm learning</h2>
+    <div class="card" style="width:100%">
+      <div class="h"><span class="t">Evening phone scrolling</span><span class="d">how rewarding, over time</span></div>
+      <svg id="trendSvg2" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
+      <div class="delta" id="trendDelta2"></div>
+    </div>
+    <p class="sub">Each dot is a moment you looked honestly. The line drifts down as the shine wears off — that drift <i>is</i> the habit loosening its grip.</p>
+    <div class="spacer"></div>
+    <div class="btnrow" style="width:100%"><button class="btn primary" onclick="go('home')">Got it</button></div>
+  </section>
+
+</div>
+
+<script>
+// ---- tiny state machine ----
+const scr = {};
+document.querySelectorAll('.screen').forEach(s=>scr[s.dataset.screen]=s);
+let current='home';
+function go(name){
+  if(!scr[name])return;
+  scr[current].classList.remove('active');
+  scr[name].classList.add('active');
+  scr[name].scrollTop=0;
+  current=name;
+  if(name==='breath') runBreath();
+  if(name==='trend-peek') drawTrend('trendSvg2','trendDelta2');
+}
+function start(){ resetAll(); go('pick'); }
+
+// ---- session data ----
+let session = {loop:'Evening phone scrolling', strength:5, reward:null};
+function resetAll(){
+  session={loop:'Evening phone scrolling', strength:5, reward:null};
+  document.getElementById('sRange').value=5; onStrength(5);
+  document.getElementById('aRange').value=2; onAfter(2);
+  document.getElementById('cRange').value=5; onCompare(5);
+  document.querySelectorAll('#rewardGrid .chip').forEach(c=>c.classList.remove('sel'));
+}
+
+function pickLoop(el,name){
+  el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel'); session.loop=name;
+}
+
+// ---- strength ----
+const strengthLabels=['nothing at all','barely there','a faint tug','a small pull','building','a noticeable pull','strong','pretty strong','hard to sit with','intense','overwhelming'];
+function onStrength(v){v=+v;session.strength=v;document.getElementById('sVal').textContent=v;document.getElementById('sLab').textContent=strengthLabels[v];}
+const afterLabels=['gone','almost gone','fading','easing','still here','holding steady','rising','strong','very strong','intense','overwhelming'];
+function onAfter(v){v=+v;document.getElementById('aVal').textContent=v;document.getElementById('aLab').textContent=afterLabels[v];}
+const compareLabels=['a letdown','not worth it','disappointing','underwhelming','meh','okay, briefly','decent','good','really good','great','genuinely great'];
+function onCompare(v){v=+v;document.getElementById('cVal').textContent=v;document.getElementById('cLab').textContent=compareLabels[v];}
+
+// ---- breathing animation ----
+let breathTimer=null;
+function runBreath(){
+  const orb=document.getElementById('orb'), word=document.getElementById('orbWord'), cap=document.getElementById('breathCap');
+  const caps=['Let the urge be here. You don’t have to do anything about it.',
+              'Where do you feel it in your body?',
+              'Get curious. What is this urge actually like?',
+              'Hmm. Just watch it, like weather.'];
+  let phase=0, step=0;
+  clearInterval(breathTimer);
+  function tick(){
+    const inhale = phase%2===0;
+    orb.classList.toggle('expand',inhale);
+    word.textContent = inhale?'breathe in':'breathe out';
+    if(inhale){ cap.style.opacity=0; setTimeout(()=>{cap.textContent=caps[step%caps.length];cap.style.opacity=1;step++;},300); }
+    phase++;
+  }
+  tick(); breathTimer=setInterval(tick,4000);
+}
+// stop timer when leaving breath
+const _go=go;
+
+// ---- reward branching ----
+const followups = {
+  relief:  {q:'Did it make the feeling go away — or just pause it?',
+            a:['It genuinely went away','It just paused — then came back','It actually got a bit worse']},
+  pleasure:{q:'Was it as good as you imagined — or did you stop noticing partway through?',
+            a:['As good as I hoped','I stopped really tasting/enjoying it','Less than I pictured']},
+  comfort: {q:'Did it actually comfort you — or leave you wanting more?',
+            a:['I feel soothed','I wanted more right after','I feel a bit emptier']},
+  boredom: {q:'Did it fill the time — or did the restlessness come back?',
+            a:['I feel settled','The restlessness came right back','I lost more time than I meant to']},
+  unsure:  {q:'Take a slow breath. Looking back — what did you actually get?',
+            a:['Something I needed','Not much, really','I feel worse than before']},
+};
+function pickReward(key){
+  session.reward=key;
+  const f=followups[key];
+  document.getElementById('fuQ').textContent=f.q;
+  const g=document.getElementById('fuGrid'); g.innerHTML='';
+  f.a.forEach((txt,i)=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=txt;
+    // suggest a "real reward value" from the honesty of the answer: first option higher, later options lower
+    const suggest=[7,3,1][i] ?? 3;
+    b.onclick=()=>{ document.getElementById('cRange').value=suggest; onCompare(suggest); go('compare'); };
+    g.appendChild(b);
+  });
+  go('followup');
+}
+
+// ---- persistence of the trend ----
+const KEY='moment_trend_v1';
+function loadTrend(){
+  try{const v=JSON.parse(localStorage.getItem(KEY)); if(Array.isArray(v)&&v.length)return v;}catch(e){}
+  return [8,7,7,6,5,6]; // seed: started shiny, drifting down
+}
+function saveTrend(a){try{localStorage.setItem(KEY,JSON.stringify(a.slice(-14)));}catch(e){}}
+
+function finishReward(){
+  const v=+document.getElementById('cRange').value;
+  const arr=loadTrend(); arr.push(v); saveTrend(arr);
+  document.getElementById('doneTitle').textContent='That’s one more data point.';
+  document.getElementById('doneSub').textContent='You didn’t have to change anything. Just by looking honestly, your brain updates what this habit is really worth.';
+  drawTrend('trendSvg','trendDelta');
+  go('done');
+}
+function finishSurf(){
+  const a=+document.getElementById('aRange').value, s=session.strength;
+  document.getElementById('doneTitle').textContent = a<s ? 'You rode the wave.' : 'You stayed with it.';
+  document.getElementById('doneSub').textContent = a<s
+    ? `The urge went from ${s} to ${a} — and you didn’t have to act on it. That’s the muscle.`
+    : 'Staying with an urge without acting is the whole practice. It gets easier.';
+  drawTrend('trendSvg','trendDelta');
+  go('done');
+}
+
+// ---- draw the sparkline ----
+function drawTrend(svgId,deltaId){
+  const arr=loadTrend();
+  const svg=document.getElementById(svgId); if(!svg)return;
+  const W=300,H=120,pad=10, max=10, min=0;
+  const x=i=>pad + i*(W-2*pad)/(arr.length-1||1);
+  const y=v=>H-pad - (v-min)/(max-min)*(H-2*pad);
+  const pts=arr.map((v,i)=>[x(i),y(v)]);
+  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=`M${pad} ${H-pad} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${W-pad} ${H-pad} Z`;
+  const last=pts[pts.length-1];
+  svg.innerHTML=`
+    <defs><linearGradient id="g_${svgId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/>
+      <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g_${svgId})"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===pts.length-1?4.5:2.6}" fill="var(--accent)"/>`).join('')}
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="9" fill="none" stroke="var(--accent)" stroke-opacity=".35"/>`;
+  const first=arr[0], now=arr[arr.length-1];
+  const d=document.getElementById(deltaId);
+  if(d){
+    if(now<first) d.textContent=`↓ from ${first}/10 to ${now}/10 — the shine is wearing off.`;
+    else if(now>first) d.textContent=`↑ now ${now}/10 — still feels rewarding. Keep watching.`;
+    else d.textContent=`holding at ${now}/10 — keep collecting moments.`;
+  }
+}
+</script>
+</body>
+</html>
