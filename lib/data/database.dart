@@ -65,6 +65,10 @@ class AppDatabase extends _$AppDatabase {
     return q.getSingleOrNull();
   }
 
+  /// Everything, for export/backup.
+  Future<List<Loop>> allLoops() => select(loops).get();
+  Future<List<Moment>> allMoments() => select(moments).get();
+
   /// All active (non-archived) loops, oldest first.
   Stream<List<Loop>> watchActiveLoops() {
     final q = select(loops)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/database.dart';
 import '../data/db_provider.dart';
+import '../data/export.dart';
 import '../data/trend.dart';
 import '../theme/app_theme.dart';
 import '../widgets/trend_chart.dart';
@@ -15,12 +16,31 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final single = loops.length == 1;
+    final db = DatabaseProvider.of(context);
     return AppScaffold(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Eyebrow('today · just noticing'),
-          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Expanded(child: Eyebrow('today · just noticing')),
+              IconButton(
+                tooltip: 'Export backup',
+                icon: Icon(Icons.ios_share, color: context.c.muted, size: 22),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    await exportBackup(db);
+                  } catch (_) {
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text("Couldn't export right now.")),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Title1(single ? 'One step at a time.' : "What's pulling at you?"),
           const SizedBox(height: 20),
           Expanded(
