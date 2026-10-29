@@ -222,6 +222,79 @@ class ChoiceTile extends StatelessWidget {
   }
 }
 
+/// Paints a dashed rounded-rectangle border around [child].
+class DashedBorder extends StatelessWidget {
+  final Widget child;
+  final Color color;
+  final double radius;
+  final double dashWidth;
+  final double dashGap;
+  final double strokeWidth;
+  const DashedBorder({
+    super.key,
+    required this.child,
+    required this.color,
+    this.radius = 20,
+    this.dashWidth = 6,
+    this.dashGap = 5,
+    this.strokeWidth = 1.5,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: color,
+        radius: radius,
+        dashWidth: dashWidth,
+        dashGap: dashGap,
+        strokeWidth: strokeWidth,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double radius, dashWidth, dashGap, strokeWidth;
+  _DashedBorderPainter({
+    required this.color,
+    required this.radius,
+    required this.dashWidth,
+    required this.dashGap,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    for (final metric in path.computeMetrics()) {
+      var dist = 0.0;
+      while (dist < metric.length) {
+        canvas.drawPath(metric.extractPath(dist, dist + dashWidth), paint);
+        dist += dashWidth + dashGap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.dashWidth != dashWidth ||
+      old.dashGap != dashGap ||
+      old.strokeWidth != strokeWidth;
+}
+
 /// A 0..10 slider with a big readout and a changing label.
 class StrengthPicker extends StatelessWidget {
   final int value;

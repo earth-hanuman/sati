@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "org.sati.sati"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -16,7 +16,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final single = loops.length == 1;
     final db = DatabaseProvider.of(context);
     return AppScaffold(
       child: Column(
@@ -24,7 +23,17 @@ class HomeScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(child: Eyebrow('today · just noticing')),
+              Expanded(
+                child: Text(
+                  'Pay attention to your habits, no judgment',
+                  style: TextStyle(
+                    color: context.c.muted,
+                    fontSize: 14,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
               PopupMenuButton<String>(
                 tooltip: 'Backup',
                 icon: Icon(Icons.more_horiz, color: context.c.muted, size: 24),
@@ -56,21 +65,22 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Title1(single ? 'One step at a time.' : "What's pulling at you?"),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.only(bottom: 8),
-              itemCount: loops.length,
+              itemCount: loops.length + 1,
               separatorBuilder: (_, _) => const SizedBox(height: 14),
-              itemBuilder: (context, i) => _LoopCardTile(loop: loops[i]),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _AddHabitButton(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AddLoopScreen()),
+              itemBuilder: (context, i) {
+                if (i == loops.length) {
+                  return _AddHabitCard(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AddLoopScreen()),
+                    ),
+                  );
+                }
+                return _LoopCardTile(loop: loops[i]);
+              },
             ),
           ),
         ],
@@ -274,31 +284,27 @@ class _LoopCardTile extends StatelessWidget {
   }
 }
 
-class _AddHabitButton extends StatelessWidget {
+/// A dashed-outline "add" card that matches the loop-card shape, sitting at the
+/// end of the list — reads as "add another card".
+class _AddHabitCard extends StatelessWidget {
   final VoidCallback onTap;
-  const _AddHabitButton({required this.onTap});
+  const _AddHabitCard({required this.onTap});
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     return Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.line),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.add, color: c.text, size: 20),
-              const SizedBox(width: 8),
-              Text('Add a habit',
-                  style: TextStyle(color: c.text, fontSize: 16, fontWeight: FontWeight.w600)),
-            ],
+        child: DashedBorder(
+          color: c.faint.withValues(alpha: 0.6),
+          radius: 20,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            alignment: Alignment.center,
+            child: Icon(Icons.add, color: c.muted, size: 24),
           ),
         ),
       ),

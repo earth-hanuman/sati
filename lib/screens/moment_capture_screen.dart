@@ -123,13 +123,13 @@ class _MomentCaptureScreenState extends State<MomentCaptureScreen> {
           const SizedBox(height: 14),
           const Sub("Both are fine. There's no failing here."),
           const SizedBox(height: 22),
-          ChoiceTile(
+          _ForkTile(
             label: 'Riding it out',
             subtitle: 'stay with the urge for a moment',
             onTap: () => _go(_Step.breath),
           ),
           const SizedBox(height: 12),
-          ChoiceTile(
+          _ForkTile(
             label: 'I did the behavior',
             subtitle: "let's look at it together",
             onTap: () => _go(_Step.reward),
@@ -317,6 +317,51 @@ class _MomentCaptureScreenState extends State<MomentCaptureScreen> {
           const Spacer(),
           PrimaryButton('Back home', onPressed: () => Navigator.of(context).pop()),
         ],
+      ),
+    );
+  }
+}
+
+/// A fixed-height, centered choice tile so the two fork options are identical
+/// in size regardless of label/subtitle length.
+class _ForkTile extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _ForkTile({required this.label, required this.subtitle, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return SizedBox(
+      height: 100,
+      child: Material(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.line),
+            ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: c.text, fontSize: 17, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: c.faint, fontSize: 13, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
